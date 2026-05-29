@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FundedNext | Account Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --fn-black: #0A0A0A;
+  --fn-card: #16161A;
+  --fn-border: rgba(255,255,255,0.07);
+  --fn-border-hover: rgba(255,255,255,0.14);
+  --fn-purple: #6C5CE7;
+  --fn-purple-light: #8B7CF6;
+  --fn-purple-dim: rgba(108,92,231,0.15);
+  --fn-text: #F0F0F2;
+  --fn-muted: #8A8A99;
+  --fn-faint: #3A3A46;
+  --fn-white: #FFFFFF;
+  --fn-success: #2ECC71;
+  --fn-warn: #F9CA24;
+  --fn-danger: #FD79A8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--fn-black);color:var(--fn-text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+body{display:flex;flex-direction:column;min-height:100vh;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(108,92,231,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(108,92,231,0.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(108,92,231,0.12) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;border-bottom:1px solid var(--fn-border);background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.logo-mark{width:28px;height:28px;}
+.logo-mark svg{width:100%;height:100%;}
+.logo-text{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--fn-white);letter-spacing:-0.3px;}
+.logo-text span{color:var(--fn-purple-light);}
+.header-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--fn-border);background:var(--fn-card);font-size:12px;color:var(--fn-muted);}
+.offline-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:1px solid rgba(46,204,113,0.2);background:rgba(46,204,113,0.06);font-size:11px;color:#5DE08A;font-weight:500;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--fn-success);box-shadow:0 0 6px var(--fn-success);}
+
+main{position:relative;z-index:1;flex:1;display:flex;overflow:hidden;height:calc(100vh - 60px);}
+
+.left-panel{width:380px;flex-shrink:0;border-right:1px solid var(--fn-border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--fn-border);flex-shrink:0;}
+.panel-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--fn-white);margin-bottom:2px;}
+.panel-sub{font-size:12px;color:var(--fn-muted);}
+.paste-area-wrapper{flex:1;display:flex;flex-direction:column;padding:16px;gap:12px;overflow:hidden;}
+textarea.paste-input{flex:1;background:var(--fn-card);border:1px solid var(--fn-border);border-radius:12px;padding:14px;color:var(--fn-text);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;resize:none;outline:none;transition:border-color 0.15s;}
+textarea.paste-input:focus{border-color:rgba(108,92,231,0.5);box-shadow:0 0 0 3px rgba(108,92,231,0.08);}
+textarea.paste-input::placeholder{color:var(--fn-faint);}
+.btn-row{display:flex;gap:8px;}
+.analyze-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:10px;background:var(--fn-purple);border:none;color:white;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;}
+.analyze-btn:hover{background:var(--fn-purple-light);}
+.clear-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;background:transparent;border:1px solid var(--fn-border);color:var(--fn-muted);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;}
+.clear-btn:hover{border-color:var(--fn-border-hover);color:var(--fn-text);}
+
+.right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.right-content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px;scrollbar-width:thin;scrollbar-color:var(--fn-faint) transparent;}
+.right-content::-webkit-scrollbar{width:4px;}
+.right-content::-webkit-scrollbar-thumb{background:var(--fn-faint);border-radius:4px;}
+
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;}
+.empty-icon{width:56px;height:56px;border-radius:14px;background:var(--fn-card);border:1px solid var(--fn-border);display:flex;align-items:center;justify-content:center;}
+.empty-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--fn-white);}
+.empty-sub{font-size:13px;color:var(--fn-muted);max-width:320px;line-height:1.6;}
+.empty-steps{display:flex;flex-direction:column;gap:8px;margin-top:8px;text-align:left;}
+.empty-step{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--fn-muted);}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--fn-purple-dim);border:1px solid var(--fn-purple);color:var(--fn-purple-light);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Syne',sans-serif;}
+
+.section-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--fn-faint);margin-bottom:10px;}
+
+.account-card{background:var(--fn-card);border:1px solid var(--fn-border);border-radius:14px;overflow:hidden;}
+.account-card-header{padding:14px 18px;border-bottom:1px solid var(--fn-border);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.account-card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--fn-white);}
+.status-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:'Syne',sans-serif;white-space:nowrap;}
+.status-active{background:rgba(46,204,113,0.12);color:#5DE08A;border:1px solid rgba(46,204,113,0.2);}
+.status-breached{background:rgba(253,121,168,0.12);color:#FD79A8;border:1px solid rgba(253,121,168,0.2);}
+.account-card-body{padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.info-item .info-label{font-size:11px;color:var(--fn-muted);margin-bottom:2px;}
+.info-item .info-value{font-size:14px;font-weight:500;color:var(--fn-text);}
+.info-value.highlight{color:var(--fn-purple-light);}
+.info-value.danger{color:var(--fn-danger);}
+.info-value.success{color:var(--fn-success);}
+.info-value.warn{color:var(--fn-warn);}
+.span-2{grid-column:span 2;}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.metric-tile{background:var(--fn-card);border:1px solid var(--fn-border);border-radius:12px;padding:14px 16px;}
+.metric-label{font-size:11px;color:var(--fn-muted);margin-bottom:4px;}
+.metric-value{font-size:20px;font-weight:600;font-family:'Syne',sans-serif;color:var(--fn-text);}
+.metric-sub{font-size:11px;color:var(--fn-faint);margin-top:2px;}
+.metric-tile.good{border-color:rgba(46,204,113,0.2);background:rgba(46,204,113,0.04);}
+.metric-tile.good .metric-value{color:#5DE08A;}
+.metric-tile.warn{border-color:rgba(249,202,36,0.2);background:rgba(249,202,36,0.04);}
+.metric-tile.warn .metric-value{color:var(--fn-warn);}
+.metric-tile.bad{border-color:rgba(253,121,168,0.2);background:rgba(253,121,168,0.04);}
+.metric-tile.bad .metric-value{color:var(--fn-danger);}
+
+.flags-list{display:flex;flex-direction:column;gap:8px;}
+.flag-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;}
+.flag-item.flag-danger{background:rgba(253,121,168,0.08);border:1px solid rgba(253,121,168,0.2);}
+.flag-item.flag-warn{background:rgba(249,202,36,0.06);border:1px solid rgba(249,202,36,0.15);}
+.flag-item.flag-good{background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.15);}
+.flag-icon{flex-shrink:0;margin-top:2px;}
+
+.mll-timeline{background:var(--fn-card);border:1px solid var(--fn-border);border-radius:12px;padding:16px 18px;}
+.mll-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--fn-border);}
+.mll-row:last-child{border-bottom:none;}
+.mll-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.mll-dot.green{background:var(--fn-success);}
+.mll-dot.yellow{background:var(--fn-warn);}
+.mll-dot.red{background:var(--fn-danger);}
+.mll-date{font-size:11px;color:var(--fn-muted);min-width:90px;flex-shrink:0;margin-top:2px;}
+.mll-desc{font-size:13px;color:var(--fn-text);line-height:1.5;}
+.mll-desc strong{color:var(--fn-purple-light);}
+
+.response-section{background:var(--fn-card);border:1px solid var(--fn-border);border-radius:14px;overflow:hidden;}
+.response-header{padding:14px 18px;border-bottom:1px solid var(--fn-border);display:flex;align-items:center;justify-content:space-between;}
+.response-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--fn-muted);letter-spacing:0.8px;text-transform:uppercase;}
+.response-actions{display:flex;gap:8px;}
+.resp-btn{display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:6px;border:1px solid var(--fn-border);background:transparent;color:var(--fn-muted);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;}
+.resp-btn:hover{border-color:var(--fn-purple);color:var(--fn-purple-light);}
+.resp-btn.copied{border-color:var(--fn-success);color:var(--fn-success);}
+.response-body{padding:18px;font-size:14px;line-height:1.75;color:var(--fn-text);white-space:pre-wrap;}
+
+.escalation-box{padding:14px 18px;background:rgba(253,121,168,0.06);border-top:1px solid rgba(253,121,168,0.15);}
+.escalation-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#FD79A8;font-family:'Syne',sans-serif;margin-bottom:6px;}
+.escalation-note{font-size:13px;color:var(--fn-text);line-height:1.5;margin-bottom:10px;}
+.escalation-copy{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1px solid rgba(253,121,168,0.3);background:transparent;color:#FD79A8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;width:fit-content;}
+.escalation-copy:hover{background:rgba(253,121,168,0.1);}
+
+.needs-metrics-box{padding:14px 18px;background:rgba(249,202,36,0.06);border:1px solid rgba(249,202,36,0.2);border-radius:12px;font-size:13px;color:var(--fn-warn);line-height:1.6;}
+.needs-metrics-box strong{display:block;font-family:'Syne',sans-serif;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;}
+
+.agreement-box{padding:14px 18px;background:rgba(253,121,168,0.06);border:1px solid rgba(253,121,168,0.2);border-radius:12px;font-size:13px;color:var(--fn-text);line-height:1.6;}
+.agreement-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#FD79A8;font-family:'Syne',sans-serif;margin-bottom:6px;}
+.copy-inline-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid var(--fn-border);background:transparent;color:var(--fn-muted);cursor:pointer;padding:0;flex-shrink:0;transition:all 0.15s;}
+.copy-inline-btn:hover{border-color:var(--fn-purple);color:var(--fn-purple-light);}
+.copy-inline-btn.copied{border-color:var(--fn-success);color:var(--fn-success);}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-mark">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="28" rx="7" fill="#6C5CE7"/>
+        <path d="M7 20L14 8L21 20H7Z" fill="white" opacity="0.15"/>
+        <path d="M10 20L14 12L18 20H10Z" fill="white"/>
+      </svg>
+    </div>
+    <span class="logo-text">Funded<span>Next</span></span>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="header-badge">Account Analyzer</div>
+  </div>
+</header>
+
+<main>
+  <div class="left-panel">
+    <div class="panel-header">
+      <div class="panel-title">Paste Account Data</div>
+      <div class="panel-sub">Open Account on API > Refresh Account Metrics > Ctrl+A, Ctrl+C then Paste below · Ctrl+Enter to analyze</div>
+    </div>
+    <div class="paste-area-wrapper">
+      <textarea class="paste-input" id="pasteInput" placeholder="Paste account page data here..."></textarea>
+      <div class="btn-row">
+        <button class="analyze-btn" onclick="analyzeAccount()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Analyze Account
+        </button>
+        <button class="clear-btn" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="right-content" id="rightContent">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="empty-title">No account loaded</div>
+        <div class="empty-steps">
+          <div class="empty-step"><span class="step-num">1</span><span>Search and open the account on <strong style="color:var(--fn-text)">api.fundednext.com</strong>. Select the <strong style="color:var(--fn-text)">Login number</strong> (starts with 9xxx) to open the account page.</span></div>
+          <div class="empty-step"><span class="step-num">2</span><span>Scroll down and click <strong style="color:var(--fn-text)">Refresh Account Metrics</strong>.<br><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNjAiIGhlaWdodD0iMTEwIiB2aWV3Qm94PSIwIDAgMjYwIDExMCI+CiAgPCEtLSBCYWNrZ3JvdW5kIGNhcmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjI2MCIgaGVpZ2h0PSIxMTAiIHJ4PSIxMCIgZmlsbD0iIzE2MTYxQSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8IS0tIERpdmlkZXIgbGluZSAtLT4KICA8bGluZSB4MT0iMCIgeTE9IjQ0IiB4Mj0iMjYwIiB5Mj0iNDQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA3KSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPCEtLSAiQWNjb3VudCBNZXRyaWNzIiBsYWJlbCAtLT4KICA8dGV4dCB4PSIxOCIgeT0iMjciIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEzIiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjRjBGMEYyIiBsZXR0ZXItc3BhY2luZz0iMC4yIj5BY2NvdW50IE1ldHJpY3M8L3RleHQ+CiAgPCEtLSBCdXR0b24gLS0+CiAgPHJlY3QgeD0iMTgiIHk9IjU2IiB3aWR0aD0iMTU4IiBoZWlnaHQ9IjM0IiByeD0iNyIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPHRleHQgeD0iOTciIHk9Ijc4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iI0YwRjBGMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UmVmcmVzaCBBY2NvdW50IE1ldHJpY3M8L3RleHQ+CiAgPCEtLSBSZWQgYXJyb3cgLS0+CiAgPGxpbmUgeDE9IjIzMCIgeTE9IjMwIiB4Mj0iMTkyIiB5Mj0iNjUiIHN0cm9rZT0iI2U4NDA0MCIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTkyLDY1IDIwMCw1NyAxOTgsNjgiIGZpbGw9IiNlODQwNDAiLz4KPC9zdmc+" style="margin-top:10px;max-width:260px;width:100%;display:block;"></span></div>
+          <div class="empty-step"><span class="step-num">3</span><span>Press <strong style="color:var(--fn-text)">Ctrl+A</strong> to select all, then <strong style="color:var(--fn-text)">Ctrl+C</strong> to copy. Paste here and click <strong style="color:var(--fn-text)">Analyze Account</strong>.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────────────────────
+function extract(text, pattern, flags) {
+  const m = text.match(new RegExp(pattern, flags || ''));
+  return m ? m[1].trim() : '';
+}
+
+function extractAfterLabel(text, label) {
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === label && lines[i+1]) return lines[i+1].trim();
+  }
+  return '';
+}
+
+function fmtMoney(n) {
+  if (n === null || n === undefined || isNaN(n)) return 'N/A';
+  return '$' + parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  return d.replace(' 00:00:00','').replace(/-/g,'/');
+}
+
+// ── MLL TABLE ─────────────────────────────────────────────────────────────
+const MLL_TABLE = {
+  rapid:  {25000:1000, 50000:2000, 100000:2500},
+  legacy: {25000:1000, 50000:2000, 100000:3000},
+  bolt:   {50000:2000},
+  flex:   {50000:1500, 100000:2500, 150000:4000}
+};
+
+const PROFIT_TARGET_TABLE = {
+  bolt:   {50000:3000},
+  legacy: {25000:1250, 50000:3000, 100000:6000},
+  rapid:  {25000:1500, 50000:3000, 100000:5000},
+  flex:   {50000:2500, 100000:5000, 150000:8000}
+};
+
+// ── PARSE ACCOUNT TYPE ────────────────────────────────────────────────────
+function parseAccountType(typeStr) {
+  const t = (typeStr || '').toLowerCase();
+  let model = '', size = 0, isFunded = false;
+
+  if (t.includes('rapid')) model = 'rapid';
+  else if (t.includes('legacy')) model = 'legacy';
+  else if (t.includes('bolt')) model = 'bolt';
+  else if (t.includes('flex')) model = 'flex';
+
+  const sizeMatch = typeStr.match(/(\d+)K/i);
+  if (sizeMatch) size = parseInt(sizeMatch[1]) * 1000;
+
+  if (t.includes('fundednext account') || t.includes('funded next account')) isFunded = true;
+  else if (t.includes('real')) isFunded = true;
+
+  const modelLabels = {rapid:'Rapid', legacy:'Legacy', bolt:'Bolt', flex:'Flex'};
+  const phaseLabel = isFunded ? 'FundedNext Account' : 'Challenge Account';
+  const label = `${modelLabels[model] || ''} ${phaseLabel}`.trim();
+  const fullLabel = `Futures ${modelLabels[model] || ''} ${isFunded ? 'FundedNext Account' : 'Challenge Account'}`.trim();
+
+  return { model, size, isFunded, label, fullLabel };
+}
+
+// ── MAIN PARSER ──────────────────────────────────────────────────────────
+function parseAccountData(raw) {
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+  const text = lines.join('\n');
+
+  const get = (label) => extractAfterLabel(text, label);
+
+  const fullName = get('Name') || get('Customer');
+  const firstName = fullName ? fullName.split(' ')[0] : 'there';
+  const email = get('Email') || extract(text, 'Email\\s*\\n([^\\n]+)');
+  const country = get('Country');
+  const login = get('Login');
+  const tradovateUsername = get('Tradovate Username');
+  const tradovateAccountName = get('Tradovate Account Name');
+  const agreementSigned = get('Agreement Signed');
+  const typeStr = get('Type');
+  const plan = get('Plan');
+  const balance = parseFloat(get('Balance')) || 0;
+  const equity = parseFloat(get('Equity')) || 0;
+  const breachedRaw = get('Breached');
+  const isBreached = breachedRaw === 'Yes';
+  const breachReason = isBreached ? get('Breachedby') : '';
+  const openTrades = get('Open Trade');
+  const closedTrades = get('Close Trade');
+
+  // Trading days
+  let tradingDaysMin = 0, tradingDaysCurrent = 0;
+  const tdBlock = text.indexOf('Minimum Trading Days');
+  if (tdBlock !== -1) {
+    const sub = text.substring(tdBlock, tdBlock + 200);
+    const minM = sub.match(/Minimum\s*\n(\d+)/);
+    const curM = sub.match(/Current Result\s*\n(\d+)/);
+    if (minM) tradingDaysMin = parseInt(minM[1]);
+    if (curM) tradingDaysCurrent = parseInt(curM[1]);
+  }
+
+  // Monthly/MLL
+  let mllMax = 0, mllRecorded = 0;
+  const mllBlock = text.indexOf('Monthly Loss Limit');
+  if (mllBlock !== -1) {
+    const sub = text.substring(mllBlock, mllBlock + 200);
+    const maxM = sub.match(/Max\.Loss\s*\n([\d.]+)/);
+    const recM = sub.match(/Max\.Loss recorded\s*\n([\d.]+)/);
+    if (maxM) mllMax = parseFloat(maxM[1]);
+    if (recM) mllRecorded = parseFloat(recM[1]);
+  }
+
+  // Profit target
+  let profitTargetMin = 0, profitTargetCurrent = 0;
+  const ptBlock = text.indexOf('Profit Target');
+  if (ptBlock !== -1) {
+    const sub = text.substring(ptBlock, ptBlock + 200);
+    const minM = sub.match(/Minimum\s*\n([\d.]+)/);
+    const curM = sub.match(/Current Result\s*\n([\d.]+)/);
+    if (minM) profitTargetMin = parseFloat(minM[1]);
+    if (curM) profitTargetCurrent = parseFloat(curM[1]);
+  }
+
+  // CRD
+  let crd = 0;
+  const crdM = text.match(/Consistency Rule Deviation\s*\n([\d.]+)/);
+  if (crdM) crd = parseFloat(crdM[1]);
+
+  // Futures Highest Profit
+  const highestProfits = [];
+  const hpBlock = text.indexOf('Futures Highest Profit');
+  if (hpBlock !== -1) {
+    const sub = text.substring(hpBlock, hpBlock + 500);
+    const rows = sub.matchAll(/([A-Z0-9]+)\s+([\d.]+)/g);
+    for (const r of rows) {
+      if (r[1] !== 'PNL') highestProfits.push({symbol: r[1], pnl: parseFloat(r[2])});
+    }
+  }
+
+  // Account metrics rows — use lastIndexOf to skip the sidebar nav occurrence
+  const metricsRows = [];
+  const metricsBlock = text.lastIndexOf('Account Metrics');
+  if (metricsBlock !== -1) {
+    const sub = text.substring(metricsBlock, metricsBlock + 6000);
+    const rowMatches = [...sub.matchAll(/(\d+)\s+([\d-]+ [\d:]+)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)/g)];
+    for (const r of rowMatches) {
+      metricsRows.push({
+        no: r[1],
+        date: r[2],
+        maxDailyLoss: parseFloat(r[3]),
+        maxMonthlyLoss: parseFloat(r[4]),
+        activeTrades: parseInt(r[5]),
+        trades: parseInt(r[6]),
+        lastBalance: parseFloat(r[7]),
+        lastEquity: parseFloat(r[8])
+      });
+    }
+  }
+
+  // Subscription cycle starting balance — prefer the explicit page field first
+  const cycleStartingBalanceRaw = parseFloat(get('Current Cycle Starting Balance')) || 0;
+  let cycleStartingBalance = cycleStartingBalanceRaw || 0;
+
+  if (!cycleStartingBalance && metricsRows.length > 0) {
+    // Fall back: use the zero-trade row (pre-trading starting balance)
+    const zeroTradeRow = metricsRows.find(r => r.trades === 0);
+    if (zeroTradeRow) cycleStartingBalance = zeroTradeRow.lastBalance;
+    else cycleStartingBalance = metricsRows[metricsRows.length - 1].lastBalance;
+  }
+  if (!cycleStartingBalance) {
+    // Last resort: infer from account size
+    const typeInfo = parseAccountType(typeStr);
+    cycleStartingBalance = typeInfo.size || 0;
+  }
+
+  const typeInfo = parseAccountType(typeStr || plan || '');
+
+  // Get correct MLL from table
+  let correctMLL = MLL_TABLE[typeInfo.model] ? (MLL_TABLE[typeInfo.model][typeInfo.size] || mllMax) : mllMax;
+  if (!correctMLL && mllMax) correctMLL = mllMax;
+
+  // MLL starting threshold
+  // MLL starting threshold always uses account size as base, never cycle starting balance
+  const mllStartThreshold = (typeInfo.size || cycleStartingBalance) - correctMLL;
+
+  // Get profit target from table
+  let correctPT = PROFIT_TARGET_TABLE[typeInfo.model] ? (PROFIT_TARGET_TABLE[typeInfo.model][typeInfo.size] || profitTargetMin) : profitTargetMin;
+
+  // Created At
+  const createdAt = get('Created At');
+
+  // DLL breach detection
+  const isDLL = isBreached && (
+    (breachReason || '').toLowerCase().includes('daily loss') ||
+    (breachReason || '').toLowerCase().includes('dll') ||
+    (breachReason || '') === 'Temporary Paused'
+  );
+
+  // Breach date from metrics (first row where balance dropped below MLL) — also check account status text
+  // "Temporary Paused" signals DLL soft breach
+
+  return {
+    firstName, fullName, email, country, login, tradovateUsername, tradovateAccountName,
+    typeStr, plan, typeInfo, balance, equity,
+    isBreached, breachReason, isDLL, agreementSigned,
+    openTrades, closedTrades,
+    tradingDaysMin, tradingDaysCurrent,
+    mllMax: correctMLL, mllRecorded, mllStartThreshold,
+    profitTargetMin: correctPT, profitTargetCurrent,
+    crd, highestProfits, metricsRows, cycleStartingBalance, createdAt
+  };
+}
+
+// ── MLL ANALYSIS ─────────────────────────────────────────────────────────
+function analyzeMLL(d) {
+  const rows = d.metricsRows;
+  const mll = d.mllMax;
+  const accountSize = d.typeInfo.size;   // e.g. 50000 — the base for all MLL calculations
+  const cycleStartBal = d.cycleStartingBalance; // only used for display / context, NOT for MLL maths
+  const model = d.typeInfo.model;
+
+  // MLL thresholds are always based on the account size, never the cycle starting balance.
+  // Lock level: where MLL stops trailing
+  //   Rapid, Legacy → accountSize (initial balance)
+  //   Bolt, Flex    → accountSize + 100
+  const lockLevel = (model === 'bolt' || model === 'flex') ? accountSize + 100 : accountSize;
+  const initialMLLThreshold = accountSize - mll;  // where MLL starts
+
+  if (rows.length === 0) return {
+    needsMetrics: true, timeline: [], mllLockDate: null,
+    peakBalance: cycleStartBal, peakDate: null,
+    breachDate: null, breachBalance: null, mllAtBreach: null,
+    initialMLLThreshold, lockLevel
+  };
+
+  // Sort oldest to newest, filter out pre-cycle seeding rows
+  // (zero-trade rows with a balance clearly different from accountSize are pre-cycle)
+  const sorted = [...rows]
+    .sort((a,b) => new Date(a.date) - new Date(b.date))
+    .filter(r => !(r.trades === 0 && Math.abs(r.lastBalance - accountSize) > 1));
+
+  let currentMLL = initialMLLThreshold;
+  let peakBalance = accountSize;
+  let peakDate = null;
+  let mllLocked = false;
+  let mllLockDate = null;
+  let breachDate = null;
+  let breachBalance = null;
+  let mllAtBreach = null;
+  const timeline = [];
+
+  for (const row of sorted) {
+    const bal = row.lastBalance;
+    const date = fmtDate(row.date);
+
+    if (bal > peakBalance) {
+      peakBalance = bal;
+      peakDate = date;
+    }
+
+    const newMLL = bal - mll;
+
+    if (!mllLocked && newMLL >= lockLevel) {
+      currentMLL = lockLevel;
+      mllLocked = true;
+      mllLockDate = date;
+      const lockNote = (model === 'bolt' || model === 'flex') ? ' (initial balance + $100)' : ' (initial balance)';
+      timeline.push({
+        date, dot: 'yellow',
+        desc: `Balance reached <strong>${fmtMoney(bal)}</strong>. Maximum Loss Limit locked permanently at <strong>${fmtMoney(lockLevel)}</strong>${lockNote}. It will not increase further.`
+      });
+    } else if (!mllLocked && newMLL > currentMLL) {
+      currentMLL = newMLL;
+      timeline.push({
+        date, dot: 'green',
+        desc: `Balance: <strong>${fmtMoney(bal)}</strong>. Maximum Loss Limit trailed up to <strong>${fmtMoney(currentMLL)}</strong>.`
+      });
+    }
+
+    if (bal < currentMLL && !breachDate) {
+      breachDate = date;
+      breachBalance = bal;
+      mllAtBreach = currentMLL;
+      timeline.push({
+        date, dot: 'red',
+        desc: `Balance fell to <strong>${fmtMoney(bal)}</strong>, below the Maximum Loss Limit of <strong>${fmtMoney(currentMLL)}</strong>. Account breached.`
+      });
+    }
+  }
+
+  const lockNote = (model === 'bolt' || model === 'flex')
+    ? ` — trails up with profits, locks at initial balance + $100 (${fmtMoney(lockLevel)})`
+    : ` — trails up with profits, locks at initial balance (${fmtMoney(lockLevel)})`;
+  timeline.unshift({
+    date: fmtDate(sorted[0]?.date || ''),
+    dot: 'green',
+    desc: `Account size: <strong>${fmtMoney(accountSize)}</strong>. Maximum Loss Limit starts at <strong>${fmtMoney(initialMLLThreshold)}</strong>${lockNote}.`
+  });
+
+  const unexplainable = d.isBreached && !breachDate && rows.length > 0;
+  return {
+    needsMetrics: false, timeline, mllLockDate, peakBalance, peakDate,
+    breachDate, breachBalance, mllAtBreach, currentMLL, lockLevel,
+    initialMLLThreshold, unexplainable
+  };
+}
+
+// ── BUILD CLIENT MESSAGE ──────────────────────────────────────────────────
+function buildClientMessage(d, mllAnalysis) {
+  const { firstName, typeInfo, balance, mllMax, cycleStartingBalance, isBreached, breachReason, agreementSigned } = d;
+  const label = typeInfo.fullLabel;
+  const sizeLabel = typeInfo.size ? `| ${typeInfo.size >= 1000 ? (typeInfo.size/1000)+'K' : typeInfo.size}` : '';
+
+  // Agreement not signed
+  if (agreementSigned === 'No') {
+    return `Hi ${firstName},\n\nIt looks like you have not signed the agreement yet, for which you are not getting the data feed properly. Visit this link to activate your account and log in to Tradovate.\n\nPlease note that you need to sign the agreement using a desktop in order to be able to trade. The article contains detailed instructions on how to log in to Tradovate:\nhttps://helpfutures.fundednext.com/en/articles/14297633-how-do-i-log-in-and-log-out-of-tradovate\n\nIf you have any other questions, feel free to let us know. We are here to help!`;
+  }
+
+  // Active account
+  if (!isBreached) {
+    const profitNeeded = d.profitTargetMin > 0 ? d.profitTargetMin - d.profitTargetCurrent : null;
+    let msg = `Hi ${firstName},\n\nThank you for reaching out! Your ${label} ${sizeLabel} is currently active and in good standing.\n\n`;
+    msg += `Your current balance is ${fmtMoney(balance)}. `;
+    if (profitNeeded !== null && profitNeeded > 0) {
+      msg += `You need an additional ${fmtMoney(profitNeeded)} in profit to reach your target of ${fmtMoney(d.profitTargetMin)}. `;
+    }
+    msg += `Your Maximum Loss Limit is ${fmtMoney(mllMax)}, so make sure your balance does not fall below ${fmtMoney(d.mllStartThreshold)}.\n\n`;
+    msg += `Keep up the great work and trade safely. If you have any questions, we are always here to help!`;
+    return msg;
+  }
+
+  // Breached account
+  const reason = (breachReason || '').toLowerCase();
+  const isMLL = reason.includes('monthly') || reason.includes('mll') || reason.includes('loss limit');
+  const isDLL = d.isDLL;
+
+  // DLL = soft breach / Temporary Paused
+  if (isDLL) {
+    return `Hi ${firstName},\n\nUnfortunately, we can confirm from our end that you have breached the Daily Loss Limit. We understand this situation can be disappointing, and we appreciate your understanding.\n\nPlease note, however, that your Account will be completely functional again after 5 PM CT on the next trading day.`;
+  }
+
+  if (!isMLL) {
+    return `Hi ${firstName},\n\nI am sorry to inform you that your ${label} ${sizeLabel} has been breached due to ${formatBreachReason(breachReason) || 'a rule violation'}. I understand this can be frustrating and disheartening.\n\n${typeInfo.isFunded
+      ? 'As this is a FundedNext Account, unfortunately the only option available is to purchase a new account to continue your trading journey with us.'
+      : 'As you are still in the Challenge Phase, you have the option to reset your account at a discounted price, or you can purchase a new account to start fresh.'}\n\nWe hope to see you back on the platform soon. If you have any questions, please do not hesitate to ask.`;
+  }
+
+  // MLL breach message — no client message until metrics are available
+  if (mllAnalysis.needsMetrics) {
+    return '';
+  }
+
+  const { peakBalance, peakDate, breachDate, breachBalance, mllAtBreach, mllLockDate, currentMLL, lockLevel } = mllAnalysis;
+  const lossAmount = cycleStartingBalance - balance;
+
+  let msg = `Hi ${firstName},\n\nI am sorry to inform you that your ${label} ${sizeLabel} has been breached due to exceeding the Maximum Loss Limit. I understand that this can be frustrating and disheartening, and I want to walk you through exactly what happened.\n\n`;
+
+  const lockNote = (typeInfo.model === 'bolt' || typeInfo.model === 'flex')
+    ? `initial balance + $100 (${fmtMoney(lockLevel)})`
+    : `initial balance (${fmtMoney(lockLevel)})`;
+
+  const accountSize = typeInfo.size || cycleStartingBalance;
+  const initialThreshold = accountSize - mllMax;
+  msg += `Your account size is ${fmtMoney(accountSize)}, with a Maximum Loss Limit of ${fmtMoney(mllMax)}. The Maximum Loss Limit starts at ${fmtMoney(initialThreshold)} and trails upward end-of-day with your balance, locking permanently once it reaches your ${lockNote}.\n\n`;
+
+  if (peakDate && peakBalance > accountSize) {
+    if (mllLockDate) {
+      msg += `As your account grew, the Maximum Loss Limit trailed upward. On ${mllLockDate}, your balance reached ${fmtMoney(peakBalance)}, at which point the Maximum Loss Limit locked permanently at ${fmtMoney(mllAtBreach || currentMLL)}. Once locked, it does not increase any further regardless of profits.\n\n`;
+    } else {
+      msg += `As your account grew, the Maximum Loss Limit trailed upward. Your balance peaked at ${fmtMoney(peakBalance)}${peakDate ? ' on ' + peakDate : ''}, which moved your Maximum Loss Limit up to ${fmtMoney(mllAtBreach || currentMLL)}.\n\n`;
+    }
+  }
+
+  if (breachDate && breachBalance !== null) {
+    msg += `On ${breachDate}, your balance dropped to ${fmtMoney(breachBalance)}, which fell below the Maximum Loss Limit of ${fmtMoney(mllAtBreach || currentMLL)} by ${fmtMoney(Math.abs(breachBalance - (mllAtBreach || currentMLL)))}. As a result, your account was permanently breached.\n\n`;
+  } else {
+    msg += `Your balance of ${fmtMoney(balance)} has fallen below the Maximum Loss Limit threshold, resulting in the breach of your account.\n\n`;
+  }
+
+  msg += typeInfo.isFunded
+    ? `As this is a FundedNext Account, unfortunately the only option available is to purchase a new account to continue your trading journey with us.`
+    : `As you are still in the Challenge Phase, you have the option to reset your account at a discounted price, or you can purchase a new account to start fresh.`;
+
+  msg += `\n\nI hope this explanation helps clarify what happened. Please do not hesitate to reach out if you have any further questions. We are always here to support you!`;
+
+  return msg;
+}
+
+// ── COPY HELPERS ──────────────────────────────────────────────────────────
+function copyIcon() {
+  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+}
+
+function escapeAttr(str) {
+  return (str || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
+
+function copyInline(btn, text) {
+  const decoded = text.replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+  navigator.clipboard.writeText(decoded).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = copyIcon();
+    }, 2000);
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function analyzeAccount() {
+  const raw = document.getElementById('pasteInput').value.trim();
+  if (!raw) return;
+
+  const d = parseAccountData(raw);
+
+  // Input validation — warn if key fields couldn't be parsed
+  const missingFields = [];
+  if (!d.login) missingFields.push('Login');
+  if (!d.typeInfo.model) missingFields.push('Account Type');
+  if (!d.balance) missingFields.push('Balance');
+  if (missingFields.length > 0) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:fixed;top:70px;right:20px;z-index:999;background:#2d2b3d;border:1px solid rgba(249,202,36,0.4);color:#F9CA24;font-size:13px;padding:10px 16px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:300px;line-height:1.5;';
+    warn.innerHTML = `<strong style="display:block;margin-bottom:3px;">⚠ Parse Warning</strong>Could not read: <strong>${missingFields.join(', ')}</strong>. The pasted data may be incomplete or from an unexpected page.`;
+    document.body.appendChild(warn);
+    setTimeout(() => warn.remove(), 5000);
+  }
+
+  // Multi-account detection — if more than one Login line found, warn
+  const loginMatches = raw.match(/^Login$/gm);
+  if (loginMatches && loginMatches.length > 1) {
+    const warn2 = document.createElement('div');
+    const warn2TopOffset = missingFields.length > 0 ? 150 : 70;
+    warn2.style.cssText = `position:fixed;top:${warn2TopOffset}px;right:20px;z-index:999;background:#2d2b3d;border:1px solid rgba(253,121,168,0.4);color:#FD79A8;font-size:13px;padding:10px 16px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:300px;line-height:1.5;`;
+    warn2.innerHTML = `<strong style="display:block;margin-bottom:3px;">⚠ Multiple Accounts Detected</strong>It looks like you may have pasted data from more than one account. Only the first account will be analyzed.`;
+    document.body.appendChild(warn2);
+    setTimeout(() => warn2.remove(), 5000);
+  }
+  const mllAnalysis = d.isBreached ? analyzeMLL(d) : { needsMetrics: false, timeline: [], unexplainable: false };
+  const clientMessage = buildClientMessage(d, mllAnalysis);
+
+  const flags = buildFlags(d, mllAnalysis);
+  const isBreached = d.isBreached;
+  const isFunded = d.typeInfo.isFunded;
+
+  // Metric tiles
+  const accountSizeForMLL = d.typeInfo.size || d.cycleStartingBalance;
+  const lossFromStart = accountSizeForMLL > 0 ? accountSizeForMLL - d.balance : 0;
+  const mllUsedPct = d.mllMax > 0 ? Math.round((lossFromStart / d.mllMax) * 100) : 0;
+  const profitPct = d.profitTargetMin > 0 ? Math.round((d.profitTargetCurrent / d.profitTargetMin) * 100) : null;
+  const daysOk = d.tradingDaysCurrent >= d.tradingDaysMin;
+  const mllTileClass = isBreached ? 'bad' : mllUsedPct >= 80 ? 'warn' : 'good';
+  const profitTileClass = profitPct === null ? '' : profitPct >= 80 ? 'good' : profitPct >= 40 ? 'warn' : '';
+
+  const flagsHtml = flags.map(f => {
+    const icons = {
+      danger:`<svg class="flag-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FD79A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+      warn:`<svg class="flag-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F9CA24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+      good:`<svg class="flag-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2ECC71" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    };
+    return `<div class="flag-item flag-${f.level}">${icons[f.level]||''}<span>${f.message}</span></div>`;
+  }).join('');
+
+  const timelineHtml = mllAnalysis.timeline.map(t => `
+    <div class="mll-row">
+      <div class="mll-dot ${t.dot}"></div>
+      <div class="mll-date">${t.date}</div>
+      <div class="mll-desc">${t.desc}</div>
+    </div>`).join('');
+
+  // Escalation
+  const escalate = d.isBreached && mllAnalysis.unexplainable;
+  const mllCalcDetail = escalate
+    ? `Account size: ${fmtMoney(d.typeInfo.size)} | MLL: ${fmtMoney(d.mllMax)} | Initial threshold: ${fmtMoney(mllAnalysis.initialMLLThreshold)} | Lock level: ${fmtMoney(mllAnalysis.lockLevel)} | Current balance: ${fmtMoney(d.balance)}`
+    : '';
+  const escalationNote = escalate
+    ? `The Account breach cannot be explained based on the available balance data. The current balance appears to be higher than the Maximum Loss Limit threshold.\n\n${mllCalcDetail}\n\nRequesting PO to check.\n\nAccount: ${d.typeInfo.fullLabel} | Login: ${d.login} | Balance: ${fmtMoney(d.balance)} | Customer: ${d.fullName}`
+    : '';
+
+  document.getElementById('rightContent').innerHTML = `
+
+    <div>
+      <div class="section-label">Account Overview</div>
+      <div class="account-card">
+        <div class="account-card-header">
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div class="account-card-title">${d.typeInfo.fullLabel}${d.typeInfo.size ? ' | ' + (d.typeInfo.size/1000) + 'K' : ''}</div>
+            ${(isBreached && mllAnalysis.breachDate) ? `<div style="font-size:11px;color:var(--fn-danger);">⚠ Breached on ${mllAnalysis.breachDate}</div>` : ''}
+            ${(isBreached && !mllAnalysis.breachDate && d.createdAt) ? `<div style="font-size:11px;color:var(--fn-muted);">Account created: ${d.createdAt}</div>` : ''}
+          </div>
+          <div class="status-badge ${isBreached ? 'status-breached' : 'status-active'}">
+            ${isBreached
+              ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Breached`
+              : `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Active`}
+          </div>
+        </div>
+        <div class="account-card-body">
+          <div class="info-item"><div class="info-label">Customer</div><div class="info-value">${d.fullName||'N/A'}</div></div>
+          <div class="info-item"><div class="info-label">Email</div><div class="info-value" style="font-size:12px;display:flex;align-items:center;gap:6px;">${d.email||'N/A'}${d.email ? `<button class="copy-inline-btn" onclick="copyInline(this,'${escapeAttr(d.email)}')" title="Copy email">${copyIcon()}</button>` : ''}</div></div>
+          <div class="info-item"><div class="info-label">Login</div><div class="info-value highlight">${d.login||'N/A'}</div></div>
+          <div class="info-item"><div class="info-label">Tradovate Username</div><div class="info-value" style="font-size:12px;display:flex;align-items:center;gap:6px;">${d.tradovateUsername||'N/A'}${d.tradovateUsername ? `<button class="copy-inline-btn" onclick="copyInline(this,'${escapeAttr(d.tradovateUsername)}')" title="Copy username">${copyIcon()}</button>` : ''}</div></div>
+          <div class="info-item span-2"><div class="info-label">Tradovate Account Name</div><div class="info-value" style="font-size:12px;display:flex;align-items:center;gap:6px;">${d.tradovateAccountName||'N/A'}${d.tradovateAccountName ? `<button class="copy-inline-btn" onclick="copyInline(this,'${escapeAttr(d.tradovateAccountName)}')" title="Copy account name">${copyIcon()}</button>` : ''}</div></div>
+          <div class="info-item"><div class="info-label">Balance</div><div class="info-value ${isBreached ? 'danger' : 'success'}">${fmtMoney(d.balance)}</div></div>
+          <div class="info-item"><div class="info-label">Country</div><div class="info-value">${d.country||'N/A'}</div></div>
+          <div class="info-item"><div class="info-label">Agreement Signed</div><div class="info-value ${d.agreementSigned==='No'?'danger':'success'}">${d.agreementSigned||'N/A'}</div></div>
+          <div class="info-item"><div class="info-label">Open / Closed Trades</div><div class="info-value">${d.openTrades||0} / ${d.closedTrades||0}</div></div>
+          ${isBreached ? `<div class="info-item span-2"><div class="info-label">Breach Reason</div><div class="info-value danger">${formatBreachReason(d.breachReason)||'N/A'}</div></div>` : ''}
+          <div class="info-item"><div class="info-label">Maximum Loss Limit</div><div class="info-value warn">${fmtMoney(d.mllMax)}</div></div>
+          <div class="info-item"><div class="info-label">MLL Threshold</div><div class="info-value">${fmtMoney(d.mllStartThreshold)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Key Metrics</div>
+      <div class="metrics-grid">
+        <div class="metric-tile ${mllTileClass}">
+          <div class="metric-label">MLL Status</div>
+          <div class="metric-value">${isBreached ? 'Breached' : mllUsedPct + '%'}</div>
+          <div class="metric-sub">MLL: ${fmtMoney(d.mllMax)}</div>
+        </div>
+        ${profitPct !== null ? `<div class="metric-tile ${profitTileClass}">
+          <div class="metric-label">Profit Progress</div>
+          <div class="metric-value">${profitPct}%</div>
+          <div class="metric-sub">${fmtMoney(d.profitTargetCurrent)} of ${fmtMoney(d.profitTargetMin)}</div>
+        </div>` : `<div class="metric-tile">
+          <div class="metric-label">Cycle Start Balance</div>
+          <div class="metric-value">${d.cycleStartingBalance ? '$'+(d.cycleStartingBalance/1000).toFixed(0)+'K' : 'N/A'}</div>
+          <div class="metric-sub">Current: ${fmtMoney(d.balance)}</div>
+        </div>`}
+        <div class="metric-tile ${daysOk ? 'good' : ''}">
+          <div class="metric-label">Trading Days</div>
+          <div class="metric-value">${d.tradingDaysCurrent}</div>
+          <div class="metric-sub">Min required: ${d.tradingDaysMin}</div>
+        </div>
+      </div>
+    </div>
+
+    ${flags.length > 0 ? `<div>
+      <div class="section-label">Flags</div>
+      <div class="flags-list">${flagsHtml}</div>
+    </div>` : ''}
+
+    ${mllAnalysis.needsMetrics ? `<div class="needs-metrics-box">
+      <strong>Action Required</strong>
+      The Account Metrics table was not included in the pasted data. Please click "Refresh Account Metrics" on the account page, then copy and paste the full page again so the breach can be properly analyzed.
+    </div>` : ''}
+
+    ${mllAnalysis.timeline.length > 0 ? `<div>
+      <div class="section-label">MLL Timeline</div>
+      <div class="mll-timeline">${timelineHtml}</div>
+    </div>` : ''}
+
+    <div>
+      <div class="section-label">Client Message</div>
+      <div class="response-section">
+        <div class="response-header">
+          <div class="response-title">${(mllAnalysis.needsMetrics || escalate) ? 'Pending — see note above' : 'Ready to send'}</div>
+          <div class="response-actions">
+            ${(!mllAnalysis.needsMetrics && !escalate && clientMessage) ? `<button class="resp-btn" id="copyMsgBtn" onclick="copyClientMessage()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy
+            </button>` : ''}
+          </div>
+        </div>
+        <div class="response-body" id="clientMsgBody" style="${(mllAnalysis.needsMetrics || escalate) ? 'color:var(--fn-faint);font-style:italic;' : ''}">${(mllAnalysis.needsMetrics || escalate) ? 'No client message — resolve the issue above first.' : escapeHtml(clientMessage)}</div>
+        ${escalate ? `<div class="escalation-box">
+          <div class="escalation-label">Internal Note — Requesting PO Check</div>
+          <div class="escalation-note">${escapeHtml(escalationNote)}</div>
+          <button class="escalation-copy" onclick="copyEscalation()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Internal Note
+          </button>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  window._clientMessage = clientMessage;
+  window._escalationNote = escalationNote;
+}
+
+function buildFlags(d, mllAnalysis) {
+  const flags = [];
+  if (d.isBreached && d.isDLL) flags.push({level:'warn', message:`Soft breach (Daily Loss Limit). Account resumes trading after 5 PM CT next trading day.`});
+  else if (d.isBreached) flags.push({level:'danger', message:`Account breached: ${formatBreachReason(d.breachReason) || 'reason not specified'}`});
+  if (d.agreementSigned === 'No') flags.push({level:'danger', message:'Agreement not signed. Trader cannot trade until agreement is completed on desktop.'});
+  if (!d.isBreached && d.mllMax > 0) {
+    const loss = (d.typeInfo.size || d.cycleStartingBalance) - d.balance;
+    const pct = (loss / d.mllMax) * 100;
+    if (pct >= 80) flags.push({level:'warn', message:`MLL usage at ${Math.round(pct)}%. Balance getting close to Maximum Loss Limit of ${fmtMoney(d.mllMax)}.`});
+    else if (pct < 0) flags.push({level:'good', message:'Account balance is healthy and well above the Maximum Loss Limit.'});
+    else flags.push({level:'good', message:`Account active. MLL usage: ${Math.round(pct)}%.`});
+  }
+  if (!d.isBreached && d.profitTargetMin > 0) {
+    const pct = (d.profitTargetCurrent / d.profitTargetMin) * 100;
+    if (pct >= 100) flags.push({level:'good', message:'Profit target reached!'});
+    else if (pct >= 80) flags.push({level:'good', message:`Profit target ${Math.round(pct)}% complete. Almost there!`});
+  }
+  if (d.tradingDaysCurrent < d.tradingDaysMin) flags.push({level:'warn', message:`Only ${d.tradingDaysCurrent} of ${d.tradingDaysMin} minimum trading days completed.`});
+  if (mllAnalysis.unexplainable) flags.push({level:'danger', message:'Breach cannot be explained from available data. Escalate to PO-Auto Liquidation.'});
+  return flags;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatBreachReason(reason) {
+  if (!reason) return reason;
+  // API uses "Monthly Loss Limit" but we display it as "Maximum Loss Limit"
+  return reason.replace(/Monthly Loss Limit/gi, 'Maximum Loss Limit');
+}
+
+function copyClientMessage() {
+  navigator.clipboard.writeText(window._clientMessage || '').then(() => {
+    const btn = document.getElementById('copyMsgBtn');
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy`;
+    }, 2000);
+  });
+}
+
+function copyEscalation() {
+  navigator.clipboard.writeText(window._escalationNote || '').then(() => alert('Escalation note copied!'));
+}
+
+function clearAll() {
+  document.getElementById('pasteInput').value = '';
+  window._clientMessage = '';
+  window._escalationNote = '';
+  document.getElementById('rightContent').innerHTML = `<div class="empty-state">
+    <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="empty-title">No account loaded</div>
+    <div class="empty-steps">
+      <div class="empty-step"><span class="step-num">1</span><span>Search and open the account on <strong style=\"color:var(--fn-text)\">api.fundednext.com</strong>. Select the <strong style=\"color:var(--fn-text)\">Login number</strong> (starts with 9xxx) to open the account page.</span></div>
+      <div class="empty-step"><span class="step-num">2</span><span>Scroll down and click <strong style=\"color:var(--fn-text)\">Refresh Account Metrics</strong>.<br><img src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNjAiIGhlaWdodD0iMTEwIiB2aWV3Qm94PSIwIDAgMjYwIDExMCI+CiAgPCEtLSBCYWNrZ3JvdW5kIGNhcmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjI2MCIgaGVpZ2h0PSIxMTAiIHJ4PSIxMCIgZmlsbD0iIzE2MTYxQSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8IS0tIERpdmlkZXIgbGluZSAtLT4KICA8bGluZSB4MT0iMCIgeTE9IjQ0IiB4Mj0iMjYwIiB5Mj0iNDQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA3KSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPCEtLSAiQWNjb3VudCBNZXRyaWNzIiBsYWJlbCAtLT4KICA8dGV4dCB4PSIxOCIgeT0iMjciIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEzIiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjRjBGMEYyIiBsZXR0ZXItc3BhY2luZz0iMC4yIj5BY2NvdW50IE1ldHJpY3M8L3RleHQ+CiAgPCEtLSBCdXR0b24gLS0+CiAgPHJlY3QgeD0iMTgiIHk9IjU2IiB3aWR0aD0iMTU4IiBoZWlnaHQ9IjM0IiByeD0iNyIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPHRleHQgeD0iOTciIHk9Ijc4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iI0YwRjBGMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UmVmcmVzaCBBY2NvdW50IE1ldHJpY3M8L3RleHQ+CiAgPCEtLSBSZWQgYXJyb3cgLS0+CiAgPGxpbmUgeDE9IjIzMCIgeTE9IjMwIiB4Mj0iMTkyIiB5Mj0iNjUiIHN0cm9rZT0iI2U4NDA0MCIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTkyLDY1IDIwMCw1NyAxOTgsNjgiIGZpbGw9IiNlODQwNDAiLz4KPC9zdmc+\" alt=\"Refresh Account Metrics\" style=\"margin-top:10px;max-width:260px;width:100%;display:block;\"></span></div>
+      <div class="empty-step"><span class="step-num">3</span><span>Press <strong style=\"color:var(--fn-text)\">Ctrl+A</strong> to select all, then <strong style=\"color:var(--fn-text)\">Ctrl+C</strong> to copy. Paste here and click <strong style=\"color:var(--fn-text)\">Analyze Account</strong>.</span></div>
+    </div>
+  </div>`;
+}
+// ── KEYBOARD SHORTCUT ────────────────────────────────────────────────────
+document.getElementById('pasteInput').addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    analyzeAccount();
+  }
+});
+</script>
+</body>
+</html>
