@@ -311,7 +311,7 @@ async function analyzeAccount() {
     </div>`;
 
   try {
-    const res = await fetch('https://falling-boat-eacf.farhanoishikcsgo-908.workers.dev/', {
+    const res = await fetch('https://tool.farhanoishikcsgo-908.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
       body: JSON.stringify({
@@ -344,7 +344,7 @@ async function analyzeAccount() {
     renderResults(parsed);
 
   } catch(err) {
-    showError('Error: ' + err.message + ' | Worker: ' + 'https://falling-boat-eacf.farhanoishikcsgo-908.workers.dev/');
+    showError('Error: ' + err.message + ' | Worker: ' + 'tool.farhanoishikcsgo-908.workers.dev/');
   }
 
   btn.disabled = false;
@@ -485,7 +485,7 @@ async function regenerateMessage() {
   document.getElementById('clientMessageBody').innerHTML = `<div class="loading"><div class="typing-dots"><span></span><span></span><span></span></div> Regenerating...</div>`;
 
   try {
-    const res = await fetch('https://falling-boat-eacf.farhanoishikcsgo-908.workers.dev/', {
+    const res = await fetch('tool.farhanoishikcsgo-908.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
       body: JSON.stringify({
